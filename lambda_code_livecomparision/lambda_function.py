@@ -1,3 +1,6 @@
+# AsthMe AWS Lambda script to analyse the current week's history in past three months
+
+# Import Libs
 import io
 import boto3
 import os
@@ -26,9 +29,10 @@ def lambda_handler(event, context):
 	#response = s3_client.get_object(Bucket="openaqmelb",Key="data_pm25_20200426.csv")
 	#file = response["Body"]
 	
-	
+	# Read Data from local folder
 	data_pm25 = pd.read_csv('data_pm25_20200426.csv', delimiter=",", low_memory=False)
 
+	# Setting days for filter
 	today = datetime.now()
 	dayofweek = today.weekday()
 	week = int(today.strftime("%V"))
@@ -58,8 +62,10 @@ def lambda_handler(event, context):
 		data_pm25_daily['date'] = pd.to_datetime(data_pm25_daily['date'])
 		data_pm25_daily['date'] = data_pm25_daily['date'].dt.strftime("%Y-%m-%d")
 		
+		# Filtering out data trend for a week back and a month back
 		lagdata =  data_pm25_daily[((data_pm25_daily.week == oneweeklag_week) | (data_pm25_daily.week==onemonthlag_week)) & (data_pm25_daily.location==location) & (data_pm25_daily.dayofweek == dayofweek)]
 		
+		# Define function to interpret pm25 value to health advice
 		def healthAdvice(pm25_daily):
 			if(pm25_daily<27):
 				health_advice = 'Good'
@@ -67,7 +73,8 @@ def lambda_handler(event, context):
 				health_advice = 'Bad'
         
 			return health_advice
-			
+		
+		# Find health advice for all rows
 		lagdata['health_advice'] = lagdata['value'].apply(healthAdvice)
 		
 		oneweeklag_health_advice = lagdata[lagdata['date']==oneweeklag.strftime("%Y-%m-%d")]['health_advice'].values[0]
@@ -78,9 +85,10 @@ def lambda_handler(event, context):
 		
 		
 		
-		
+		# Filtering out data trend for the whole weeks history in last three months
 		pastdataforcurrentweek = data_pm25_daily[((data_pm25_daily.week==onemonthlag_week) | (data_pm25_daily.week==twomonthlag_week) | (data_pm25_daily.week==threemonthlag_week)) & (data_pm25_daily.location==location)]
 		
+		# Construct body of response for pastDataForCurrentWeek
 		responseObj_pastdata = {}
 		weeks = pastdataforcurrentweek['week'].unique()
 		counter = 0
@@ -97,8 +105,8 @@ def lambda_handler(event, context):
 			week_df = pastdataforcurrentweek[pastdataforcurrentweek.week==week]
 			responseObj_pastdata[weekstr] = week_df.to_dict(orient='records')
 
-
-		# Construct body of response
+		
+		# Construct body of response for currentDayInThePast
 		respObj = {}
 		respObj['date'] = today.date().strftime("%Y-%m-%d")
 		respObj['location'] = location
@@ -118,10 +126,7 @@ def lambda_handler(event, context):
 		
 
 
-		#print('QP - PM2.5 current value = ' + str(pm25_current))
-		#print('QP - PM2.5 Last week = ' + str(pm25_oneweeklag))
-		#print('QP - PM2.5 last month = ' + str(pm25_onemonthklag))
-    # Construct body of response
+	# Construct body of response for error condition
 	else:
 		finalResp = {}
 		finalResp['error'] = 'Data not retrived from source'

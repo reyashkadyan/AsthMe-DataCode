@@ -1,3 +1,6 @@
+# AWS Lambda code for checking the air quality at current location
+
+# Import Libs
 import json
 import requests
 
@@ -37,7 +40,7 @@ def lambda_handler(event, context):
         elif (pm25_current >= 370):
             health_advice = 'Hazardous'
         else:
-            health_advice = 'Good-NF'
+            health_advice = 'Good'
 
     if response_latest['results']:
         # Construct body of response
@@ -48,29 +51,25 @@ def lambda_handler(event, context):
         transactionResponse['health_advice'] = health_advice
         transactionResponse['location'] = location
         transactionResponse['data'] = nearest_latest
+        
+        transactionResponseResult = {}
+        transactionResponseResult['result'] = transactionResponse
 
-        print('QP - latest measurements = ' + nearest_latest_measurements)
-        print('QP - PM2.5 current value = ' + pm25_current)
+        print('QP - PM2.5 current value = ' + str(pm25_current))
         print('QP - Health Advice = ' + health_advice)
     # Construct body of response
     else:
         transactionResponse = {}
         transactionResponse['error'] = 'Data not retrived from source'
-
-    # # Construct body of responsetransactionResponse = {}
-    # transactionResponse = {}
-    # transactionResponse['latitude'] = latitude
-    # transactionResponse['longitude'] = longitude
-    # transactionResponse['location'] = "Box Hill"
-    # transactionResponse['AQI'] = 11
-    # transactionResponse['message'] = 'Hello from Lambda land, the air quality is fantastic'
+        transactionResponseResult = {}
+        transactionResponseResult['result'] = transactionResponse
 
     # Construct http response object
     responseObject = {}
     responseObject['statusCode'] = 200
     responseObject['headers'] = {}
     responseObject['headers']['Content-Type'] = 'application/json'
-    responseObject['body'] = json.dumps(transactionResponse)
+    responseObject['body'] = json.dumps(transactionResponseResult)
 
     # 4. Return the response object
     return responseObject
