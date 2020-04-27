@@ -3,6 +3,8 @@ Data side scripts for AsthMe app (Monash - IE FinalSem Project)
 
 This AWS API service gets the live air quality for all locations in melbourne
 
+Main file: handler_function.py
+
 example usage:
 https://zag12540b6.execute-api.us-east-1.amazonaws.com/test/locationslive
 
